@@ -1,0 +1,24 @@
+{
+  "project_type": "web_platform",
+  "stage": "mvp_development",
+  "principles": [
+    "Simple over complex",
+    "Working over perfect",
+    "Tested over assumed"
+  ],
+  "tech_stack": {
+    "backend": "supabase",
+    "frontend": "vanilla_html_js",
+    "database": "postgresql",
+    "auth": "supabase_auth"
+  },
+  "constraints": {
+    "max_file_length": 200,
+    "max_files_per_session": 3,
+    "framework": "none_for_now"
+  },
+  "testing": {
+    "approach": "manual_html_interfaces",
+    "automated": "not_yet"
+  }
+}
