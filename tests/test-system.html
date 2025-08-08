@@ -146,7 +146,13 @@
             <button class="logout-btn" onclick="logout()">Logout</button>
         </div>
     </h1>
-    
+
+    <!-- TEMPORARY TOKEN HELPER -->
+    <div style="background: yellow; padding: 10px; margin: 10px 0; border: 2px solid orange;">
+        <button onclick="showToken()">📋 Copy Auth Token for Testing</button>
+        <pre id="tokenDisplay" style="margin-top: 10px; word-wrap: break-word;"></pre>
+    </div>
+
     <div class="test-card">
         <h2>📊 Available Data Types</h2>
         <button onclick="loadDataTypes()">Load Data Types</button>
@@ -199,24 +205,41 @@
         // Initialize Supabase client
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
+        // TEMPORARY: Helper to get auth token for testing
+        async function showToken() {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                // Show token in the yellow box
+                document.getElementById('tokenDisplay').textContent = session.access_token;
+                
+                // Also copy to clipboard
+                navigator.clipboard.writeText(session.access_token);
+                alert('Token copied to clipboard!');
+            } else {
+                alert('Not logged in!');
+            }
+        }
+
         let sampleAppId = null;
         let currentUserId = null;
+        let currentSession = null;
 
         // Check authentication status
         async function checkAuth() {
-            const { data: { user } } = await supabase.auth.getUser();
+            const { data: { session } } = await supabase.auth.getSession();
             
-            if (!user) {
+            if (!session || !session.user) {
                 // Not logged in, redirect to auth page
                 window.location.href = 'auth.html';
                 return;
             }
             
-            // Store user ID for all operations
-            currentUserId = user.id;
+            // Store session and user ID for all operations
+            currentSession = session;
+            currentUserId = session.user.id;
             
             // Display user info
-            document.getElementById('userEmail').textContent = user.email;
+            document.getElementById('userEmail').textContent = session.user.email;
             document.getElementById('authInfo').style.display = 'flex';
         }
 
@@ -285,16 +308,21 @@
                 return;
             }
 
+            if (!currentSession) {
+                alert('Please log in first');
+                window.location.href = 'auth.html';
+                return;
+            }
+
             try {
                 const response = await fetch(`${FUNCTIONS_URL}/request-permission`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                        'Authorization': `Bearer ${currentSession.access_token}`
                     },
                     body: JSON.stringify({
                         app_id: sampleAppId,
-                        user_id: currentUserId,
                         data_type: dataType,
                         permission_level: 'read-write',
                         purpose: `To provide personalized ${dataType} insights and recommendations`,
@@ -365,16 +393,21 @@
         async function grantPermission(requestId) {
             if (!confirm('Grant this permission request?')) return;
             
+            if (!currentSession) {
+                alert('Please log in first');
+                window.location.href = 'auth.html';
+                return;
+            }
+            
             try {
                 const response = await fetch(`${FUNCTIONS_URL}/grant-permission`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                        'Authorization': `Bearer ${currentSession.access_token}`
                     },
                     body: JSON.stringify({
                         request_id: requestId,
-                        user_id: currentUserId,
                         expires_in_days: 30
                     })
                 });
@@ -400,16 +433,21 @@
                 return;
             }
 
+            if (!currentSession) {
+                alert('Please log in first');
+                window.location.href = 'auth.html';
+                return;
+            }
+
             try {
                 const response = await fetch(`${FUNCTIONS_URL}/check-permission`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                        'Authorization': `Bearer ${currentSession.access_token}`
                     },
                     body: JSON.stringify({
                         app_id: sampleAppId,
-                        user_id: currentUserId,
                         data_type: dataType,
                         permission_level: 'read'
                     })
@@ -435,14 +473,27 @@
 
         // View active permissions with revoke buttons
         async function viewActivePermissions() {
+            // Check if user is logged in
+            if (!currentUserId) {
+                document.getElementById('activePermissions').innerHTML = 
+                    '<div class="warning">Please log in to view permissions</div>';
+                return;
+            }
+
             try {
-                const response = await fetch(`${SUPABASE_URL}/rest/v1/active_permissions`, {
-                    headers: {
-                        'apikey': SUPABASE_ANON_KEY,
-                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
-                    }
-                });
-                const data = await response.json();
+                // Query active_permissions filtered by current user
+                const { data, error } = await supabase
+                    .from('active_permissions')
+                    .select('*')
+                    .eq('user_id', currentUserId)
+                    .order('granted_at', { ascending: false });
+
+                if (error) {
+                    console.error('Error fetching permissions:', error);
+                    document.getElementById('activePermissions').innerHTML = 
+                        `<div class="error">Error loading permissions: ${error.message}</div>`;
+                    return;
+                }
                 
                 if (data && data.length > 0) {
                     const html = data.map(perm => 
@@ -474,16 +525,21 @@
         async function revokePermission(permissionId) {
             if (!confirm('Revoke this permission? The app will immediately lose access.')) return;
             
+            if (!currentSession) {
+                alert('Please log in first');
+                window.location.href = 'auth.html';
+                return;
+            }
+            
             try {
                 const response = await fetch(`${FUNCTIONS_URL}/revoke-permission`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                        'Authorization': `Bearer ${currentSession.access_token}`
                     },
                     body: JSON.stringify({
-                        permission_id: permissionId,
-                        user_id: currentUserId
+                        permission_id: permissionId
                     })
                 });
 

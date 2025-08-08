@@ -12,22 +12,48 @@ serve(async (req) => {
   }
 
   try {
+    // Get Authorization header
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ error: 'Missing or invalid authorization header' }),
+        { 
+          status: 401, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+
+    const token = authHeader.replace('Bearer ', '')
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
+    // Verify the JWT token and get user
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid or expired token' }),
+        { 
+          status: 401, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+
     const { 
       app_id,
-      user_id,
       data_type,
       permission_level 
     } = await req.json()
 
     // Validate inputs
-    if (!app_id || !user_id || !data_type) {
+    if (!app_id || !data_type) {
       return new Response(
         JSON.stringify({ 
-          error: 'Missing required fields: app_id, user_id, data_type' 
+          error: 'Missing required fields: app_id, data_type' 
         }),
         { 
           status: 400, 
@@ -40,7 +66,7 @@ serve(async (req) => {
     const { data: hasPermission, error } = await supabase
       .rpc('check_app_permission', {
         p_app_id: app_id,
-        p_user_id: user_id,
+        p_user_id: user.id,
         p_data_type: data_type,
         p_permission_level: permission_level || 'read'
       })
@@ -65,7 +91,7 @@ serve(async (req) => {
         .from('active_permissions')
         .select('*')
         .eq('app_id', app_id)
-        .eq('user_id', user_id)
+        .eq('user_id', user.id)
         .eq('data_type', data_type)
         .single()
       
