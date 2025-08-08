@@ -13,23 +13,49 @@ serve(async (req) => {
   }
 
   try {
+    // Get Authorization header
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ error: 'Missing or invalid authorization header' }),
+        { 
+          status: 401, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+
+    const token = authHeader.replace('Bearer ', '')
+
     // Get service client for system operations
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-    // Parse request
+    // Verify the JWT token and get user
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid or expired token' }),
+        { 
+          status: 401, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+
+    // Parse request (no longer accepting user_id)
     const { 
       request_id,
-      user_id,
       expires_in_days 
     } = await req.json()
 
     // Validate inputs
-    if (!request_id || !user_id) {
+    if (!request_id) {
       return new Response(
         JSON.stringify({ 
-          error: 'Missing required fields: request_id and user_id' 
+          error: 'Missing required field: request_id' 
         }),
         { 
           status: 400, 
@@ -70,7 +96,7 @@ serve(async (req) => {
     const { data: permission, error: permissionError } = await supabase
       .from('data_permissions')
       .insert({
-        user_id,
+        user_id: user.id,
         app_id: request.app_id,
         data_type: request.data_type,
         permission_level: request.permission_level,
@@ -106,7 +132,7 @@ serve(async (req) => {
     await supabase
       .from('permission_audit_log')
       .insert({
-        user_id,
+        user_id: user.id,
         app_id: request.app_id,
         action: 'permission_granted',
         data_type: request.data_type,

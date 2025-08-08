@@ -13,15 +13,41 @@ serve(async (req) => {
   }
 
   try {
-    // Create Supabase client with SERVICE ROLE key for elevated privileges
+    // Get Authorization header
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ error: 'Missing or invalid authorization header' }),
+        { 
+          status: 401, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+
+    const token = authHeader.replace('Bearer ', '')
+
+    // Create Supabase client with SERVICE ROLE key for all operations
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-    // Get request body
+    // Verify the JWT token and get user
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid or expired token' }),
+        { 
+          status: 401, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+
+    // Get request body (no longer accepting user_id)
     const { 
       app_id, 
-      user_id,
       data_type, 
       permission_level, 
       purpose,
@@ -55,12 +81,12 @@ serve(async (req) => {
       )
     }
 
-    // Create the permission request
+    // Create the permission request using authenticated user's ID
     const { data, error } = await supabase
       .from('permission_requests')
       .insert({
         app_id,
-        user_id: user_id || null,
+        user_id: user.id,
         data_type,
         permission_level,
         purpose,
