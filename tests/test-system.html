@@ -15,6 +15,32 @@
             color: #333;
             border-bottom: 3px solid #007bff;
             padding-bottom: 10px;
+            position: relative;
+        }
+        .auth-info {
+            position: absolute;
+            right: 0;
+            top: 0;
+            font-size: 14px;
+            font-weight: normal;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .auth-info .user-email {
+            color: #666;
+        }
+        .logout-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .logout-btn:hover {
+            background: #c82333;
         }
         .test-card {
             background: white;
@@ -113,7 +139,13 @@
     </style>
 </head>
 <body>
-    <h1>🚀 Paradigm Permission System Test</h1>
+    <h1>
+        🚀 Paradigm Permission System Test
+        <div class="auth-info" id="authInfo" style="display: none;">
+            <span class="user-email" id="userEmail"></span>
+            <button class="logout-btn" onclick="logout()">Logout</button>
+        </div>
+    </h1>
     
     <div class="test-card">
         <h2>📊 Available Data Types</h2>
@@ -157,13 +189,42 @@
         <div id="activePermissions" class="result"></div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
         // Configuration - Update this with your actual anon key
         const SUPABASE_URL = 'http://localhost:54321';
-        const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY_HERE'; // Get this from: npx supabase status
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'; // Get this from: npx supabase status
         const FUNCTIONS_URL = 'http://localhost:54321/functions/v1';
         
+        // Initialize Supabase client
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
         let sampleAppId = null;
+        let currentUserId = null;
+
+        // Check authentication status
+        async function checkAuth() {
+            const { data: { user } } = await supabase.auth.getUser();
+            
+            if (!user) {
+                // Not logged in, redirect to auth page
+                window.location.href = 'auth.html';
+                return;
+            }
+            
+            // Store user ID for all operations
+            currentUserId = user.id;
+            
+            // Display user info
+            document.getElementById('userEmail').textContent = user.email;
+            document.getElementById('authInfo').style.display = 'flex';
+        }
+
+        // Logout function
+        async function logout() {
+            await supabase.auth.signOut();
+            window.location.href = 'auth.html';
+        }
 
         // Load data types from database
         async function loadDataTypes() {
@@ -233,7 +294,7 @@
                     },
                     body: JSON.stringify({
                         app_id: sampleAppId,
-                        user_id: '11111111-1111-1111-1111-111111111111',
+                        user_id: currentUserId,
                         data_type: dataType,
                         permission_level: 'read-write',
                         purpose: `To provide personalized ${dataType} insights and recommendations`,
@@ -313,7 +374,7 @@
                     },
                     body: JSON.stringify({
                         request_id: requestId,
-                        user_id: '11111111-1111-1111-1111-111111111111',
+                        user_id: currentUserId,
                         expires_in_days: 30
                     })
                 });
@@ -348,7 +409,7 @@
                     },
                     body: JSON.stringify({
                         app_id: sampleAppId,
-                        user_id: '11111111-1111-1111-1111-111111111111',
+                        user_id: currentUserId,
                         data_type: dataType,
                         permission_level: 'read'
                     })
@@ -422,7 +483,7 @@
                     },
                     body: JSON.stringify({
                         permission_id: permissionId,
-                        user_id: '11111111-1111-1111-1111-111111111111'
+                        user_id: currentUserId
                     })
                 });
 
@@ -440,11 +501,17 @@
         }
 
         // Auto-load on page load
-        window.onload = () => {
-            loadSampleApp();
-            loadDataTypes();
-            viewRequests();
-            viewActivePermissions();
+        window.onload = async () => {
+            // Check auth first
+            await checkAuth();
+            
+            // If authenticated, load everything
+            if (currentUserId) {
+                loadSampleApp();
+                loadDataTypes();
+                viewRequests();
+                viewActivePermissions();
+            }
         };
     </script>
 </body>
