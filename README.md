@@ -1,4 +1,3 @@
-```markdown
 # Paradigm Platform
 
 A revolutionary platform where users own their data and earn equity in the apps they use.
@@ -9,6 +8,24 @@ A revolutionary platform where users own their data and earn equity in the apps 
 - **Permission System**: Granular permissions with time-based expiration
 - **Equity Distribution**: Users earn shares in apps they use (coming soon)
 - **Developer-Friendly**: Simple SDK for building apps on the platform
+
+## 🔐 Authentication
+
+The platform uses Supabase Auth for user management:
+
+- **Signup/Login**: Email and password authentication
+- **User Profiles**: Automatic profile creation on signup
+- **Protected APIs**: All Edge Functions require valid JWT
+- **Session Management**: Automatic token refresh
+
+### Test Credentials
+Create your own test account at `/tests/auth.html`
+
+### Authentication Flow
+1. User signs up/logs in via `/tests/auth.html`
+2. Receives JWT token (valid for 1 hour)
+3. Token sent with all API requests
+4. Edge Functions verify token before processing
 
 ## 🛠️ Tech Stack
 
@@ -99,4 +116,3 @@ Proprietary - All Rights Reserved
 ## 🙏 Acknowledgments
 
 Built with Supabase, PostgreSQL, and Claude Code assistance.
-```
