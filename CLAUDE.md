@@ -2,17 +2,26 @@
 
 ## Project State
 - **Current Phase**: Building MVP
-- **Last Updated**: [Today's date]
+- **Last Updated**: August 8, 2025
 - **Development Mode": Controlled iteration with Claude Code
 
 ## What We've Built
 ✅ Permission system (request, grant, check, revoke)
 ✅ Database schema with RLS policies  
-✅ Edge Functions for permission APIs
+✅ Edge Functions for permission APIs (with auth)
 ✅ Test interface (test-system.html)
+✅ User authentication (signup/login/logout)
+✅ User profiles linked to auth
+✅ JWT-protected Edge Functions
 
 ## Currently Building
-🚧 User authentication system
+🚧 Developer SDK for easy integration
+
+## Next Steps in Order
+1. Basic JavaScript SDK (3-4 days)
+2. Developer registration system (2-3 days)
+3. Sample app using SDK (1 day)
+4. KYC integration (3-4 days)
 
 ## Architecture Rules
 1. **Supabase First**: Use Supabase features before building custom
