@@ -1,25 +1,53 @@
-# Paradigm Platform - AI Context
+# Paradigm Platform - Master Context
 
-## What We're Building
-Paradigm is a platform where users own their data and earn equity in apps they use.
-Like an app store, but users keep their data and get shares in successful apps.
+## Project State
+- **Current Phase**: Building MVP
+- **Last Updated**: [Today's date]
+- **Development Mode": Controlled iteration with Claude Code
 
-## Current Status
-- Day 2 of development
-- Supabase installed and running locally
-- Starting KYC integration next
+## What We've Built
+✅ Permission system (request, grant, check, revoke)
+✅ Database schema with RLS policies  
+✅ Edge Functions for permission APIs
+✅ Test interface (test-system.html)
 
-## Architecture
-- Using Supabase for authentication, database, and storage
-- Extending Supabase with KYC verification
-- Building SDK for app developers
+## Currently Building
+🚧 User authentication system
 
-## Next Steps
-1. Set up KYC integration with auth hooks
-2. Create permission system for data sharing
-3. Build developer SDK
+## Architecture Rules
+1. **Supabase First**: Use Supabase features before building custom
+2. **Simple Over Smart**: Basic solutions that work > complex optimizations
+3. **Test Everything**: Each feature needs a test interface
+4. **No Premature Optimization**: Build for 100 users, not 1 million
 
-## Important Notes
-- US-only launch (requires KYC)
-- Users can earn max $2,200/year in equity (Reg CF limit)
-- Apps pay 20% revenue share to platform
+## Code Standards
+- Single responsibility: Each file does ONE thing
+- Explicit naming: Long clear names > short cryptic ones  
+- Comments for "why", not "what"
+- Maximum file length: 200 lines (split if larger)
+
+## File Organization
+- /supabase - All Supabase config and migrations
+- /extensions - Platform-specific features
+- /tests - Test interfaces (HTML files for now)
+- /sdk - Developer SDK (coming soon)
+- /docs - User-facing documentation
+
+## Development Boundaries
+DO NOT let Claude Code:
+- Refactor working code without permission
+- Add features not explicitly requested
+- Create complex abstractions
+- Build "nice to have" features
+
+ALWAYS tell Claude Code:
+- The ONE specific task to complete
+- Where to put the files
+- To keep existing code unchanged unless specified
+
+## Tech Stack Decisions
+- Database: Supabase (PostgreSQL)
+- Auth: Supabase Auth
+- APIs: Supabase Edge Functions  
+- Frontend: Simple HTML/JS for now (no framework)
+- Hosting: Local development only currently
