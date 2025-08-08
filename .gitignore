@@ -1,0 +1,24 @@
+# Supabase
+.supabase/
+**/supabase/.branches
+**/supabase/.temp
+
+# Environment variables
+.env
+.env.local
+
+# Dependencies
+node_modules/
+
+# Mac system files
+.DS_Store
+
+# Editor directories
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Test file with keys (we'll create a template instead)
+test-system-with-keys.html
